@@ -44,6 +44,8 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mvs-cli", "mvs-cli\mvs-cli.
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mvstray", "mvstray\mvstray.vcxproj", "{E550164F-A421-4883-BF77-DD010AC2742E}"
 EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "mvstools", "mvstools\mvstools.vcxproj", "{A0A8BC54-32E7-4927-AB8D-75A558CA9E41}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -164,6 +166,14 @@ Global
 		{E550164F-A421-4883-BF77-DD010AC2742E}.Release|x64.Build.0 = Release|x64
 		{E550164F-A421-4883-BF77-DD010AC2742E}.Release|x86.ActiveCfg = Release|Win32
 		{E550164F-A421-4883-BF77-DD010AC2742E}.Release|x86.Build.0 = Release|Win32
+		{A0A8BC54-32E7-4927-AB8D-75A558CA9E41}.Debug|x64.ActiveCfg = Debug|x64
+		{A0A8BC54-32E7-4927-AB8D-75A558CA9E41}.Debug|x64.Build.0 = Debug|x64
+		{A0A8BC54-32E7-4927-AB8D-75A558CA9E41}.Debug|x86.ActiveCfg = Debug|Win32
+		{A0A8BC54-32E7-4927-AB8D-75A558CA9E41}.Debug|x86.Build.0 = Debug|Win32
+		{A0A8BC54-32E7-4927-AB8D-75A558CA9E41}.Release|x64.ActiveCfg = Release|x64
+		{A0A8BC54-32E7-4927-AB8D-75A558CA9E41}.Release|x64.Build.0 = Release|x64
+		{A0A8BC54-32E7-4927-AB8D-75A558CA9E41}.Release|x86.ActiveCfg = Release|Win32
+		{A0A8BC54-32E7-4927-AB8D-75A558CA9E41}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
