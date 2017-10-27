@@ -19,13 +19,43 @@
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 #include <iostream>
+#include <vector>
+#include <string>
 #include <json/minijson_writer.hpp>
 #include <metaverse/explorer.hpp>
 #include <metaverse/mgbubble/MongooseCli.hpp>
 #include <metaverse/explorer/extensions/command_extension_func.hpp>
 #include <metaverse/explorer/extensions/exception.hpp>
 
-BC_USE_MVS_MAIN
+//BC_USE_MVS_MAIN
+namespace libbitcoin {
+    int main(int argc, char* argv[]);
+}
+
+int wmain(int argc, wchar_t* argv[])
+{
+    using namespace libbitcoin;
+    boost::locale::generator locale;
+    std::locale::global(locale(BC_LOCALE_UTF8));
+    boost::filesystem::path::imbue(std::locale());
+
+    // https://msdn.microsoft.com/en-us//magazine/stxk41x1.aspx
+    // variables is local and environ is global
+    auto variables = to_utf8(_wenviron);
+    auto tmp_args = reinterpret_cast<char**>(variables.data());
+    std::vector<std::string> vargs;
+    while (*tmp_args != nullptr)
+    {
+        //std::cout << *tmp_args << std::endl;
+        vargs.push_back(*tmp_args);
+        _putenv(*tmp_args++);
+    }
+    tmp_args--;
+    auto arguments = to_utf8(argc, argv);
+    auto args = reinterpret_cast<char**>(arguments.data());
+
+    return libbitcoin::main(argc, args);
+}
 
 /**
  * Invoke this program with the raw arguments provided on the command line.

@@ -60,7 +60,7 @@ settings::settings(bc::settings context)
     {
         case bc::settings::mainnet:
         {
-            identifier = 0x4d53564d;
+            identifier = 0x4d535646;
             inbound_port = 5251;
 
             // Seeds based on mvs.live/network/dns-servers

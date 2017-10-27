@@ -28,12 +28,12 @@ int main(int argc, char* argv[])
     hash_digest passwd_hash = get_hash(argv[2]);
 
     auto home_path = default_data_path();
-    auto data_path = home_path / "mainnet/account_table";
+    auto data_path = boost::filesystem::path("./mainnet/account_table");
     if (!boost::filesystem::exists(data_path)) {
         std::cout << "database not found at " << data_path.string() << std::endl;
         return -1;
     }
-    //std::cout << "load accounts ..." << std::endl;
+    std::cout << "load accounts from " << data_path.string() << std::endl;
     std::shared_ptr<shared_mutex> mutex = std::make_shared<shared_mutex>();
     database::account_database accounts(data_path, mutex);
     accounts.start();

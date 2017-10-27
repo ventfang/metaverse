@@ -13,7 +13,7 @@
 #include <metaverse/consensus/libdevcore/Exceptions.h>
 #include <boost/throw_exception.hpp>
 #include <metaverse/bitcoin/utility/log.hpp>
-
+#include <metaverse/bitcoin/config/hash256.hpp>
 
 using namespace libbitcoin;
 using namespace std;
@@ -95,6 +95,15 @@ bool MinerAux::search(libbitcoin::chain::header& header, std::function<bool (voi
 			MinerAux::setNonce(header, (u64)tryNonce);
 			MinerAux::setMixHash(header, mixhash);
 			log::debug(LOG_MINER) << "find slolution! block height: "<< header.number << '\n';
+            std::ostringstream o1, o2, o3, o4;
+            o1 << std::hex << header.nonce << std::endl;
+            o2 << header_hash;
+            o3 << seed;
+            o4 << mixhash;
+            log::debug(LOG_MINER) << "NOUNCE:" << o1.str();
+            log::debug(LOG_MINER) << "SEEDHASH:" << seed.hex() << " | " << o3.str();
+            log::debug(LOG_MINER) << "HEADERHASH:" << libbitcoin::config::hash256(header.hash()) << " | " << o2.str();
+            log::debug(LOG_MINER) << "MIXHASH:" << header.mixhash << " | " << mixhash.hex() << " | " << o4.str();
 			break;
 		}
 		if(is_exit() == true)
