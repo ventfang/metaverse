@@ -44,6 +44,11 @@ public:
         blockchain::simple_chain& blockchain,
         const config::checkpoint::list& checkpoints);
 
+    ~session_header_sync() {
+        log::info(LOG_NODE)
+            << "header sync session stopped.";
+    }
+
     virtual void start(result_handler handler);
 
 protected:

@@ -56,8 +56,11 @@ console_result mnemonic_to_seed::invoke(std::ostream& output,
         return console_result::failure;
     }
 
-    if (!valid && language.size() > 1)
+    if (!valid && language.size() > 1) 
+    {
         error << BX_EC_MNEMONIC_TO_SEED_INVALID_IN_LANGUAGES << std::flush;
+        return console_result::failure;
+    }
 
 #ifdef WITH_ICU
     // Any word set divisible by 3 works regardless of language validation.

@@ -254,7 +254,7 @@ void session::handle_handshake(const code& ec, channel::ptr channel,
 {
     if (ec)
     {
-        log::trace(LOG_NETWORK)
+        log::info(LOG_NETWORK)
             << "Failure in handshake with [" << channel->authority()
             << "] " << ec.message();
         handle_started(ec);

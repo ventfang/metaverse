@@ -78,10 +78,17 @@ bool MinerAux::search(libbitcoin::chain::header& header, std::function<bool (voi
     uint64_t ms;
     uint64_t hashCount = 1;
 
-	while( nullptr == dag)
+	while( (nullptr == dag) && !is_exit())
 	{
 		log::debug(LOG_MINER) << "start generate dag\n";
-		dag = get_full(seed);
+        try {
+            dag = get_full(seed);
+        }
+        catch (std::exception& e) {
+            dag = nullptr;
+            log::debug(LOG_MINER) << "start generate dag failed: " << e.what() << "\n";
+            std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        }
 	}
 	log::debug(LOG_MINER) << "Start miner @ height:  "<< header.number << '\n';
     timeStart = std::chrono::steady_clock::now();

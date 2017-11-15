@@ -63,6 +63,8 @@ session_header_sync::session_header_sync(p2p& network, header_queue& hashes,
     CONSTRUCT_TRACK(session_header_sync)
 {
     static_assert(back_off_factor < 1.0, "invalid back-off factor");
+    log::info(LOG_NODE)
+        << "Starting header sync session.";
 }
 
 // Start sequence.

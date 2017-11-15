@@ -42,6 +42,7 @@ session_seed::session_seed(p2p& network)
     CONSTRUCT_TRACK(session_seed),
 	network_{network}
 {
+    address_counter_.store(0);
 }
 
 // Start sequence.
@@ -73,7 +74,7 @@ void session_seed::handle_started(const code& ec, result_handler handler)
 
 void session_seed::handle_count(size_t start_size, result_handler handler)
 {
-    if (start_size != 0)
+    if (start_size > 3)
     {
         log::debug(LOG_NETWORK)
             << "Seeding is not required because there are " 
@@ -101,20 +102,6 @@ void session_seed::handle_count(size_t start_size, result_handler handler)
 void session_seed::start_seeding(size_t start_size, connector::ptr connect,
     result_handler handler)
 {
-    // When all seeds are synchronized call session_seed::handle_complete.
-    auto all = BIND2(handle_complete, start_size, handler);
-
-    // Synchronize each individual seed before calling handle_complete.
-    auto each = synchronize(all, settings_.seeds.size(), NAME, true);
-
-    // We don't use parallel here because connect is itself asynchronous.
-    for (const auto& seed: settings_.seeds)
-        start_seed(seed, connect, each);
-}
-
-void session_seed::start_seed(const config::endpoint& seed,
-    connector::ptr connect, result_handler handler)
-{
     if (stopped())
     {
         log::debug(LOG_NETWORK)
@@ -123,23 +110,49 @@ void session_seed::start_seed(const config::endpoint& seed,
         return;
     }
 
+    // When all seeds are synchronized call session_seed::handle_complete.
+    auto all = BIND2(handle_complete, start_size, handler);
+
+    // Synchronize each individual seed before calling handle_complete.
+    result_handler each = synchronize(all, 1, NAME, true);
+
+    // We don't use parallel here because connect is itself asynchronous.
+    for (const auto& seed : settings_.seeds)
+        start_seed(seed, connect, [each, this](const code& ec){ 
+            if(address_counter_.load() == 0) 
+                each(ec); 
+        });
+}
+
+void session_seed::start_seed(const config::endpoint& seed,
+    connector::ptr connect, result_handler handler)
+{
     log::info(LOG_NETWORK)
         << "Contacting seed [" << seed << "]";
 
     // OUTBOUND CONNECT
-    connect->connect(seed, BIND4(handle_connect, _1, _2, seed, handler), [this](const asio::endpoint& endpoint){
-    	network_.store(config::authority{endpoint}.to_network_address(), [](const code& ec){});
-    	log::debug(LOG_NETWORK) << "session seed store," << endpoint ;
+    connect->connect(seed, 
+        BIND4(handle_connect, _1, _2, seed, handler), 
+        [this](const asio::endpoint& endpoint){
+            ++address_counter_;
     });
 }
 
 void session_seed::handle_connect(const code& ec, channel::ptr channel,
     const config::endpoint& seed, result_handler handler)
 {
+    asio::endpoint ep;
+    // store host no matter peer is reachable or not
+    if (!!channel) {
+        ep = channel->get_remote_ep();
+        network_.store(config::authority{ channel->get_remote_ep() }.to_network_address(), [](const code& ec) {});
+    }
+
+    --address_counter_;
     if (ec)
     {
         log::info(LOG_NETWORK)
-            << "Failure contacting seed [" << seed << "] " << ec.message();
+            << "Failure contacting seed [" << seed << "] as " << channel->get_remote_ep() << " " << ec.message();
         handler(ec);
         return;
     }
@@ -196,7 +209,7 @@ void session_seed::handle_complete(size_t start_size, result_handler handler)
 void session_seed::handle_final_count(size_t current_size, size_t start_size,
     result_handler handler)
 {
-    const auto result = current_size > start_size ? error::success :
+    const auto result = current_size >= start_size ? error::success :
         error::operation_failed;
 
     // This is the end of the seed sequence.

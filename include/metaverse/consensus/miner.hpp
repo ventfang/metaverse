@@ -70,6 +70,7 @@ public:
 
 	bool start(const wallet::payment_address& pay_address);
 	bool start(const std::string& pay_public_key);
+    bool start();
 	bool stop();
 	static block_ptr create_genesis_block(bool is_mainnet);
 	bool script_hash_signature_operations_count(size_t &count, chain::input::list& inputs, vector<transaction_ptr>& transactions);
@@ -81,6 +82,7 @@ public:
 	bool put_result(const std::string& nounce, const std::string& mix_hash, const std::string& header_hash);
 	bool set_miner_public_key(const string& public_key);
 	bool set_miner_payment_address(const wallet::payment_address& address);
+    const wallet::payment_address& get_miner_payment_address() { return pay_address_; }
 	void get_state(uint64_t &height,  uint64_t &rate, string& difficulty, bool& is_mining);
 	bool get_block_header(chain::header& block_header, const string& para);
 

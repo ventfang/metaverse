@@ -46,29 +46,30 @@ namespace pt = boost::property_tree;
 console_result start::invoke (std::ostream& output,
         std::ostream& cerr, libbitcoin::server::server_node& node)
 {
-    std::istringstream sin;
-    std::stringstream sout;
-    
-    // get new address 
-    const char* cmds2[]{"getnewaddress", auth_.name.c_str(), auth_.auth.c_str()};
-    sin.str("");
-    sout.str("");
-
     auto& blockchain = node.chain_impl();
     auto& miner = node.miner();
+    if (!miner.get_miner_payment_address()) {
+        std::istringstream sin;
+        std::stringstream sout;
 
-    if (dispatch_command(3, cmds2, sin, sout, sout, node) != console_result::okay) {
-        throw address_generate_exception(sout.str());
+        // get new address 
+        const char* cmds2[]{ "getnewaddress", auth_.name.c_str(), auth_.auth.c_str() };
+        sin.str("");
+        sout.str("");
+
+        if (dispatch_command(3, cmds2, sin, sout, sout, node) != console_result::okay) {
+            throw address_generate_exception(sout.str());
+        }
+
+        relay_exception(sout);
+
+        auto&& str_addr = sout.str();
+        bc::wallet::payment_address addr(str_addr);
     }
-     
-    relay_exception(sout);
-
-    auto&& str_addr = sout.str();
-    bc::wallet::payment_address addr(str_addr);
 
     // start
-    if (miner.start(addr)){
-        output<<"solo mining started at "<<str_addr<<".";
+    if (miner.start()){
+        output<<"solo mining started at " << miner.get_miner_payment_address().encoded() <<".";
         return console_result::okay;
     } else {
         output<<"solo mining startup got error.";

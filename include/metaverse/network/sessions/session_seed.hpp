@@ -71,6 +71,7 @@ private:
     void handle_channel_stop(const code& ec);
 
 private:
+    std::atomic<int> address_counter_;
     p2p& network_;
 };
 

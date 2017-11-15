@@ -20,6 +20,8 @@
 
 #include <boost/property_tree/ptree.hpp>      
 #include <boost/property_tree/json_parser.hpp>
+#include <chrono>
+#include <iostream>
 
 #include <metaverse/bitcoin.hpp>
 #include <metaverse/client.hpp>
@@ -28,6 +30,7 @@
 #include <metaverse/explorer/display.hpp>
 #include <metaverse/explorer/prop_tree.hpp>
 #include <metaverse/explorer/dispatch.hpp>
+#include <metaverse/explorer/generated.hpp>
 #include <metaverse/explorer/extensions/wallet/getnewaddress.hpp>
 #include <metaverse/explorer/extensions/command_extension_func.hpp>
 #include <metaverse/explorer/extensions/command_assistant.hpp>
@@ -43,6 +46,7 @@ namespace pt = boost::property_tree;
 
 /************************ getnewaddress *************************/
 
+///*
 console_result getnewaddress::invoke (std::ostream& output,
         std::ostream& cerr, libbitcoin::server::server_node& node)
 {
@@ -67,7 +71,7 @@ console_result getnewaddress::invoke (std::ostream& output,
     pt::ptree aroot;
     pt::ptree addresses;
      
-
+    auto start_timept = std::chrono::high_resolution_clock::now();
     for ( idx = 0; idx < option_.count; idx++ ) {
 
         auto addr = std::make_shared<bc::chain::account_address>();
@@ -146,6 +150,9 @@ console_result getnewaddress::invoke (std::ostream& output,
         address.put("", sout.str());
         addresses.push_back(std::make_pair("", address));
     }
+    auto end_timept = std::chrono::high_resolution_clock::now();
+    auto time_elapse = std::chrono::duration_cast<std::chrono::milliseconds>(end_timept - start_timept);
+    log::info("CMD") << "time elapse for get " << option_.count << " new addresses is " << time_elapse.count() << " ms";
     
     aroot.add_child("addresses", addresses);
     if(option_.count == 1)
@@ -155,7 +162,107 @@ console_result getnewaddress::invoke (std::ostream& output,
     
     return console_result::okay;
 }
+//*/
+/*
+console_result getnewaddress::invoke(std::ostream& output,
+    std::ostream& cerr, libbitcoin::server::server_node& node)
+{
+    auto& blockchain = node.chain_impl();
+    auto acc = blockchain.is_account_passwd_valid(auth_.name, auth_.auth);
+    std::string mnemonic;
+    acc->get_mnemonic(auth_.auth, mnemonic);
+    if (mnemonic.empty()) { throw mnemonicwords_empty_exception("mnemonic empty"); }
+    if (!option_.count) { throw address_amount_exception("invalid address number parameter"); }
 
+    std::stringstream sout;
+    mnemonic_to_seed cmd_mnemonic_to_seed;
+    hd_new cmd_hd_new;
+    hd_private cmd_hd_private;
+    hd_to_ec cmd_hd_to_ec;
+    ec_to_public cmd_ec_to_public;
+    ec_to_address cmd_ec_to_address;
+    
+    uint32_t idx = 0;
+    pt::ptree aroot;
+    pt::ptree addresses;
+
+    std::vector<std::string> mnemonic_words;
+    boost::split(mnemonic_words, mnemonic, boost::is_any_of(" "));
+
+    auto start_timept = std::chrono::high_resolution_clock::now();
+    for (idx = 0; idx < option_.count; idx++) {
+
+        auto addr = std::make_shared<bc::chain::account_address>();
+        addr->set_name(auth_.name);
+
+        sout.str("");
+        cmd_mnemonic_to_seed.set_words_argument(mnemonic_words);
+        cmd_mnemonic_to_seed.invoke(sout, sout);
+
+        cmd_hd_new.set_version_option(76066276);
+        cmd_hd_new.set_seed_argument(sout.str());
+        sout.str("");
+        cmd_hd_new.invoke(sout, sout);
+
+        cmd_hd_private.set_hd_private_key_argument(sout.str());
+        cmd_hd_private.set_hard_option(false);
+        cmd_hd_private.set_index_option(acc->get_hd_index());
+        sout.str("");
+        cmd_hd_private.invoke(sout, sout);
+
+        cmd_hd_to_ec.set_hd_key_argument(sout.str());
+        cmd_hd_to_ec.set_secret_version_option(76066276);
+        cmd_hd_to_ec.set_public_version_option(76067358);
+        sout.str("");
+        cmd_hd_to_ec.invoke(sout, sout);
+
+        addr->set_prv_key(sout.str(), auth_.auth);
+
+        cmd_ec_to_public.set_ec_private_key_argument(sout.str());
+        cmd_ec_to_public.set_uncompressed_option(false);
+        sout.str("");
+        cmd_ec_to_public.invoke(sout, sout);
+
+        cmd_ec_to_address.set_ec_public_key_argument(sout.str());
+        // testnet
+        if (blockchain.chain_settings().use_testnet_rules) {
+            cmd_ec_to_address.set_version_option(127);
+        }
+        else {
+            cmd_ec_to_address.set_version_option(50);
+        }
+        sout.str("");
+        cmd_ec_to_address.invoke(sout, sout);
+
+        addr->set_address(sout.str());
+        addr->set_status(1); // 1 -- enable address
+                             //output<<sout.str();
+
+        acc->increase_hd_index();
+        addr->set_hd_index(acc->get_hd_index());
+
+        blockchain.store_account(acc);
+        blockchain.store_account_address(addr);
+
+        // write to output json
+        pt::ptree address;
+        address.put("", sout.str());
+        addresses.push_back(std::make_pair("", address));
+    }
+
+    auto end_timept = std::chrono::high_resolution_clock::now();
+    auto time_elapse = std::chrono::duration_cast<std::chrono::milliseconds>(end_timept - start_timept);
+    log::info("CMD") << "time elapse for get " << option_.count << " new addresses is " << time_elapse.count() << " ms";
+
+    aroot.add_child("addresses", addresses);
+    if (option_.count == 1)
+        output << sout.str();
+    else
+        pt::write_json(output, aroot);
+
+    return console_result::okay;
+}
+*/
 
 } // namespace commands
 } // namespace explorer

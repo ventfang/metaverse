@@ -99,7 +99,9 @@ void session_manual::start_connect(const std::string& hostname, uint16_t port,
 
     // MANUAL CONNECT OUTBOUND
     connector->connect(hostname, port,
-        BIND6(handle_connect, _1, _2, hostname, port, handler, retries));
+        BIND6(handle_connect, _1, _2, hostname, port, handler, retries-1), [=](const asio::endpoint& endpoint) {
+        //log::info("TEST") << "start_connect manual connection:" << hostname << ":" << port << " " << endpoint;
+    });
 }
 
 void session_manual::handle_connect(const code& ec, channel::ptr channel,
@@ -108,7 +110,7 @@ void session_manual::handle_connect(const code& ec, channel::ptr channel,
 {
     if (ec)
     {
-        log::warning(LOG_NETWORK)
+        log::info(LOG_NETWORK)
             << "Failure connecting [" << config::endpoint(hostname, port)
             << "] manually: " << ec.message();
 
@@ -116,7 +118,7 @@ void session_manual::handle_connect(const code& ec, channel::ptr channel,
         if (settings_.manual_attempt_limit == 0)
             start_connect(hostname, port, handler, 0);
         else if (retries > 0)
-            start_connect(hostname, port, handler, retries - 1);
+            start_connect(hostname, port, handler, retries);
         else
             handler(ec, nullptr);
 
@@ -150,7 +152,7 @@ void session_manual::handle_channel_start(const code& ec,
             return;
         }
 
-        connect(hostname, port, handler);
+        //connect(hostname, port, handler);
         return;
     }
 
@@ -171,10 +173,17 @@ void session_manual::attach_protocols(channel::ptr channel)
 void session_manual::handle_channel_stop(const code& ec,
     const std::string& hostname, uint16_t port)
 {
-    log::debug(LOG_NETWORK)
+    log::info(LOG_NETWORK)
         << "Manual channel stopped: " << ec.message();
 
-    connect(hostname, port);
+    if (stopped() || (ec.value() == error::service_stopped))
+        return;
+
+    auto shared_this = shared_from_base<session_manual>();
+    const auto timer = std::make_shared<deadline>(pool_, asio::seconds(3));
+    timer->start(std::bind([this, shared_this, hostname, port]() {
+        connect(hostname, port); 
+    }));   
 }
 
 } // namespace network

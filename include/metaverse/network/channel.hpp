@@ -58,6 +58,9 @@ public:
 
     void invoke_protocol_start_handler(const code& ec);
 
+    void set_remote_ep(const asio::endpoint& ep) { remote_ep_ = ep; }
+    const asio::endpoint& get_remote_ep() const { return remote_ep_; }
+
 protected:
     virtual void handle_activity();
     virtual void handle_stopping();
@@ -73,6 +76,7 @@ private:
 
     bool notify_;
     uint64_t nonce_;
+    asio::endpoint remote_ep_; // use for connection can not established 
     deadline::ptr expiration_;
     deadline::ptr inactivity_;
     std::function<void()> protocol_start_handler_;

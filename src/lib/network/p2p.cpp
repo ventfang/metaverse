@@ -188,7 +188,7 @@ void p2p::handle_inbound_started(const code& ec, result_handler handler)
         handler(ec);
         return;
     }
-
+    
     // The instance is retained by the stop handler (until shutdown).
     const auto outbound = attach_outbound_session();
 

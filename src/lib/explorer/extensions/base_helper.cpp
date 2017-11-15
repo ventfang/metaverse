@@ -422,8 +422,7 @@ void sync_fetchbalance (wallet::payment_address& address,
             if(tx_temp.is_coinbase()
                 && !(output.script.pattern() == bc::chain::script_pattern::pay_key_hash_with_lock_height)) { // incase readd deposit
                 // add not coinbase_maturity etp into frozen
-                if((!row.output_height ||
-                            (row.output_height && (height - row.output_height) < coinbase_maturity))) {
+                if((height - row.output_height) < coinbase_maturity) {
                     frozen_balance += row.value;
                 }
             }
@@ -433,8 +432,7 @@ void sync_fetchbalance (wallet::payment_address& address,
                 unspent_balance += row.value;
         }
     
-        if (row.output_height != 0 &&
-            (row.spend.hash == null_hash || row.spend_height == 0))
+        if (row.spend.hash == null_hash || row.spend_height == 0)
             confirmed_balance += row.value;
     }
     
@@ -580,8 +578,7 @@ void base_transfer_helper::sync_fetchutxo (const std::string& prikey, const std:
             if(tx_temp.is_coinbase()
                 && !(output.script.pattern() == bc::chain::script_pattern::pay_key_hash_with_lock_height)) { // incase readd deposit
                 // add not coinbase_maturity etp into frozen
-                if((!row.output_height ||
-                            (row.output_height && (height - row.output_height) < coinbase_maturity))) {
+                if((height - row.output_height) < coinbase_maturity) {
                     frozen_flag = true;
                 }
             }

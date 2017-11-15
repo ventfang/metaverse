@@ -567,6 +567,14 @@ bool miner::start(const std::string& public_key)
 	return false;
 }
 
+bool miner::start()
+{
+    if (pay_address_) {
+        return start(pay_address_);
+    }
+    return false;
+}
+
 bool miner::stop()
 {
 	if(thread_){

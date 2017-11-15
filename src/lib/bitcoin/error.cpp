@@ -265,6 +265,7 @@ namespace error {
             case boost_error::destination_address_required:
                 return error::resolve_failed;
 
+            case asio_error::connection_refused:
             case boost_error::broken_pipe:
             case boost_error::host_unreachable:
             case boost_error::network_down:

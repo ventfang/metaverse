@@ -87,7 +87,7 @@ console_result exportaccountasfile::invoke (std::ostream& output,
     account_info all_info(blockchain, auth_.auth, *acc, *pvaddr, *sh_asset_vec);
 
     // store encrypted data to file
-    bc::ofstream file_output(argument_.dst.string(), std::ofstream::out);
+    bc::ofstream file_output(argument_.dst.generic_string(), std::ofstream::out);
     file_output << all_info;
     file_output << std::flush;      
     file_output.close();

@@ -28,6 +28,7 @@ std::ostream& operator<<(std::ostream& out, const explorer_exception& ex)
 
 void relay_exception(std::stringstream& ss)
 {    
+    return;
     // parse json
     using namespace boost::property_tree;
     try 

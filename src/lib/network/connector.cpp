@@ -146,15 +146,6 @@ void connector::connect(const std::string& hostname, uint16_t port,
 void connector::handle_resolve(const boost_code& ec, asio::iterator iterator,
     connect_handler handler, resolve_handler h)
 {
-	auto it = iterator;
-	asio::iterator end;
-	if (h)
-	{
-		while(it != end){
-			h(*it);
-			++it;
-		}
-	}
     // Critical Section
     ///////////////////////////////////////////////////////////////////////////
     mutex_.lock_shared();
@@ -175,6 +166,16 @@ void connector::handle_resolve(const boost_code& ec, asio::iterator iterator,
         return;
     }
 
+    auto it = iterator;
+    asio::iterator end;
+    if (h)
+    {
+        while (it != end) {
+            h(*it);
+            ++it;
+        }
+    }
+
     auto do_connecting = [this, &handler](asio::iterator resolver_iterator)
     {
         const auto timeout = settings_.connect_timeout();
@@ -190,16 +191,15 @@ void connector::handle_resolve(const boost_code& ec, asio::iterator iterator,
         // This is branch #1 of the connnect sequence.
         timer->start(
             std::bind(&connector::handle_timer,
-                shared_from_this(), _1, socket, handle_connect));
+                shared_from_this(), _1, socket, resolver_iterator, handle_connect));
     
         safe_connect(resolver_iterator, socket, timer, handle_connect);
     };
     
     // Get all hosts under one DNS record.
     for (asio::iterator end; iterator != end; ++iterator)
-    {  
+    {
         do_connecting(iterator);
-        break; // FIXME. chenhao, can not query all hosts, caused by loop fastly
     }
 
     mutex_.unlock_shared();
@@ -208,19 +208,12 @@ void connector::handle_resolve(const boost_code& ec, asio::iterator iterator,
 
 void connector::safe_connect(asio::iterator iterator, socket::ptr socket,
     deadline::ptr timer, connect_handler handler)
-{
+{        
     // Critical Section (external)
-    /////////////////////////////////////////////////////////////////////////// 
+    ///////////////////////////////////////////////////////////////////////////
     const auto locked = socket->get_socket();
-
-    // This is branch #2 of the connnect sequence.
-    using namespace boost::asio;
-	ip::tcp::endpoint endpoint = *iterator;
-	bc::log::trace(NAME)<< "conecting addr:" << endpoint;
-
-    async_connect(locked->get(), iterator,
-        std::bind(&connector::handle_connect,
-            shared_from_this(), _1, _2, socket, timer, handler));
+    locked->get().async_connect(*iterator, std::bind(&connector::handle_connect,
+        shared_from_this(), _1, iterator, socket, timer, handler));
     /////////////////////////////////////////////////////////////////////////// 
 }
 
@@ -228,34 +221,52 @@ void connector::safe_connect(asio::iterator iterator, socket::ptr socket,
 // ----------------------------------------------------------------------------
 
 // private:
-void connector::handle_timer(const code& ec, socket::ptr socket,
+void connector::handle_timer(const code& ec, socket::ptr socket, asio::iterator iter,
    connect_handler handler)
 {
-    // This is the end of the timer sequence.
-	bc::log::trace(NAME)<<"timer called here: "<<__func__;
-    if (ec)
-        handler(ec, nullptr);
-    else
-        handler(error::channel_timeout, nullptr);
+    //bc::log::debug("TEST") << __func__ << " " << iter->endpoint() << " " << ec.message();
 
-    socket->close();
+    const auto locked = socket->get_socket();
+    locked->get().cancel(); // this will lead to call connector::handle_connect
+
+    /*
+    // This is the end of the timer sequence.
+    auto channel = new_channel(socket);
+    if (iter != asio::iterator()) { 
+        channel->set_remote_ep(*iter);
+    }
+    if (ec)
+        handler(ec, channel);
+    else
+        handler(error::channel_timeout, channel);
+    */
 }
 
 // Connect sequence.
 // ----------------------------------------------------------------------------
 
 // private:
+// WARNNING: iter can be empty if use asio::async_connect, we use socket::async_connect
 void connector::handle_connect(const boost_code& ec, asio::iterator iter,
     socket::ptr socket, deadline::ptr timer, connect_handler handler)
 {
-    pending_.remove(socket);
-    // This is the end of the connect sequence.
-    if (ec)
-        handler(error::boost_to_error_code(ec), nullptr);
-    else
-        handler(error::success, new_channel(socket));
-
     timer->stop();
+    pending_.remove(socket);
+    if (boost::asio::error::operation_aborted == ec) { // canceled in connector::handle_timer
+        //bc::log::debug("TEST") << __func__ << " operation_aborted";
+    }
+
+    // This is the end of the connect sequence.
+    auto channel = new_channel(socket);
+    channel->set_remote_ep(*iter);
+    bc::code stdec = error::boost_to_error_code(ec);
+    //bc::log::debug("TEST") << __func__ << " " << channel->get_remote_ep() << " " << stdec.message() << " " << socket->get_authority().to_string() ;
+    if (ec) {
+        handler(error::boost_to_error_code(ec), channel);
+    }
+    else {
+        handler(error::success, channel);
+    }
 }
 
 std::shared_ptr<channel> connector::new_channel(socket::ptr socket)
