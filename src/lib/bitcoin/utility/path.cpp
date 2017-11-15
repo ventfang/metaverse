@@ -43,8 +43,8 @@ const boost::filesystem::path& default_data_path()
 #else
         char file_path[MAX_PATH] = { 0 };
 #endif
-        SHGetSpecialFolderPath(NULL, file_path, CSIDL_APPDATA, true);
-        fs::path pathRet = boost::filesystem::path(file_path) / "Metaverse";
+        GetModuleFileName(NULL, file_path, MAX_PATH);
+        boost::filesystem::path pathRet = boost::filesystem::path(file_path).parent_path() / "Metaverse";
         fs::create_directories(pathRet);
         default_path = pathRet;
 #else
